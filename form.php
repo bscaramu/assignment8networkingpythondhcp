@@ -4,7 +4,7 @@
     <title>Request IP Address</title>
 </head>
 <body>
-    <h1>Request IP Address!</h1>
+    <h1>Request IP Address</h1>
     <form method="POST" action="process.php">
         <label for="mac">MAC Address:</label>
         <input type="text" name="mac" required><br><br>

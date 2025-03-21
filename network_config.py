@@ -10,7 +10,6 @@ ipv4_pool = list(ipaddress.IPv4Network("192.168.1.0/24").hosts())
 ipv6_subnet = "2001:db8::/64"
 lease_file = "leases.json"
 
-# Cargar leases si ya existen
 if os.path.exists(lease_file):
     with open(lease_file, 'r') as f:
         try:
@@ -25,12 +24,13 @@ def validate_mac(mac):
 
 def eui64(mac, subnet):
     parts = mac.split(":")
-    eui = parts[:3] + ['ff', 'fe'] + parts[3:]
-    eui[0] = "%02x" % (int(eui[0], 16) ^ 2)
-    eui_str = ''.join(eui)
-    interface_id = ':'.join([eui_str[i:i+4] for i in range(0, len(eui_str), 4)])
+    mac_bytes = [int(part, 16) for part in parts]
+    mac_bytes[0] ^= 0b00000010
+    eui64_bytes = mac_bytes[:3] + [0xFF, 0xFE] + mac_bytes[3:]
+    interface_id_int = int.from_bytes(eui64_bytes, byteorder='big')
     subnet_prefix = ipaddress.IPv6Network(subnet, strict=False)
-    return str(subnet_prefix.network_address + int(ipaddress.IPv6Address(interface_id)))
+    ipv6_int = int(subnet_prefix.network_address) + interface_id_int
+    return str(ipaddress.IPv6Address(ipv6_int))
 
 def save_leases():
     with open(lease_file, 'w') as f:
@@ -63,7 +63,6 @@ def assign_ipv6(mac):
     save_leases()
     return lease_info
 
-# MAIN
 if len(sys.argv) != 3:
     print(json.dumps({"error": "Usage: python3 network_config.py <MAC> <DHCPv4|DHCPv6>"}))
     sys.exit(1)
